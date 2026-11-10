@@ -66,3 +66,22 @@ Os arquivos de previsões, gráficos e análises são gerados na pasta `outputs/
 - Organizar o código em módulos reutilizáveis.
 - Experimentar outros modelos utilizando validação temporal.
 - Criar uma API de previsão com FastAPI.
+
+## Resultados da Validação Temporal
+
+O modelo foi avaliado com TimeSeriesSplit
+utilizando cinco períodos de validação.
+
+| Modelo | MAE médio |
+|--------|-----------|
+| Random Forest | 10.53 |
+| DummyRegressor | 14.75 |
+
+O Random Forest apresentou redução aproximada
+de 28.6% no MAE médio em comparação ao baseline.
+
+O modelo superou o baseline nos cinco períodos
+avaliados.
+
+Os dados utilizados são sintéticos e os
+resultados não representam desempenho em produção.
