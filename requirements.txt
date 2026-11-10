@@ -3,3 +3,9 @@ numpy
 matplotlib
 scikit-learn
 pytest
+streamlit
+plotly
+fastapi 
+uvicorn 
+joblib 
+httpx

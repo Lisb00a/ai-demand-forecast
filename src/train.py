@@ -10,6 +10,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import joblib
 
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
@@ -295,6 +296,20 @@ def executar_projeto():
     )
 
     modelo.fit(X_treino, y_treino)
+
+    # Salvar o modelo e a ordem das variáveis
+    PASTA_MODELOS = PASTA_RAIZ / "models"
+    PASTA_MODELOS.mkdir(parents=True, exist_ok=True)
+
+    joblib.dump(
+        {
+            "modelo": modelo,
+            "variaveis": variaveis,
+        },
+        PASTA_MODELOS / "random_forest.joblib"
+    )
+
+    print("Modelo salvo com sucesso!")
 
     print("Profundidade do modelo principal:", modelo.max_depth)
 
