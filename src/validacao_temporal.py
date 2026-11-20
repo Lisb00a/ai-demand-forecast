@@ -1,4 +1,3 @@
-from pathlib import Path
 
 import pandas as pd
 
@@ -7,118 +6,94 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.dummy import DummyRegressor
 
-
-ROOT = Path(__file__).resolve().parents[1]
-
-DATA_PATH = ROOT / "data" / "orders_daily.csv"
-
-
-def preparar_dados():
-
-    df = pd.read_csv(DATA_PATH)
-
-    df["date"] = pd.to_datetime(df["date"])
-
-    df = df.sort_values("date").reset_index(drop=True)
-
-    # Variáveis de calendário
-    df["dia_semana"] = df["date"].dt.day_of_week
-    df["mes"] = df["date"].dt.month
-    df["final_semana"] = (
-        df["dia_semana"] >= 5
-    ).astype(int)
-
-    # Histórico de pedidos
-    df["pedidos_lag_1"] = df["orders"].shift(1)
-
-    df["media_movel_7"] = (
-        df["orders"]
-        .shift(1)
-        .rolling(window=7)
-        .mean()
-    )
-
-    df = df.dropna().reset_index(drop=True)
-
-    return df
+from src.train import (
+    CAMINHO_DADOS,
+    COLUNAS_PT,
+    adicionar_variaveis,
+)
 
 
 def validar_modelo():
+    dados = pd.read_csv(CAMINHO_DADOS)
+    dados = dados.rename(columns=COLUNAS_PT)
+    dados = adicionar_variaveis(dados)
 
-    df = preparar_dados()
-
-    features = [
-        "promotion",
-        "holiday",
-        "dia_semana",
+    variaveis = [
+        "promocao",
+        "feriado",
+        "dia_da_semana",
         "mes",
-        "final_semana",
+        "dia_do_mes",
+        "fim_de_semana",
         "pedidos_lag_1",
-        "media_movel_7"
+        "pedidos_lag_7",
+        "media_movel_7",
     ]
 
-    X = df[features]
-    y = df["orders"]
+    # Reservar os 20% finais para teste.
+    indice_divisao = int(len(dados) * 0.8)
+    dados_treino = dados.iloc[:indice_divisao]
 
-    tscv = TimeSeriesSplit(n_splits=5)
+    X = dados_treino[variaveis]
+    y = dados_treino["pedidos"]
 
+    tscv = TimeSeriesSplit(n_splits=3)
     resultados = []
 
-    for fold, (train_index, test_index) in enumerate(
+    for fold, (idx_treino, idx_validacao) in enumerate(
         tscv.split(X), start=1
     ):
-
-        X_train = X.iloc[train_index]
-        X_test = X.iloc[test_index]
-
-        y_train = y.iloc[train_index]
-        y_test = y.iloc[test_index]
+        X_treino = X.iloc[idx_treino]
+        X_validacao = X.iloc[idx_validacao]
+        y_treino = y.iloc[idx_treino]
+        y_validacao = y.iloc[idx_validacao]
 
         baseline = DummyRegressor(strategy="mean")
-        baseline.fit(X_train, y_train)
+        baseline.fit(X_treino, y_treino)
 
         modelo = RandomForestRegressor(
-            n_estimators=100,
-            max_depth=8,
-            random_state=42
+            n_estimators=200,
+            max_depth=5,
+            random_state=42,
         )
+        modelo.fit(X_treino, y_treino)
 
-        modelo.fit(X_train, y_train)
+        previsoes = modelo.predict(X_validacao)
+        previsoes_baseline = baseline.predict(X_validacao)
 
-        previsoes = modelo.predict(X_test)
-        previsoes_baseline = baseline.predict(X_test)
-
-        mae = mean_absolute_error(y_test, previsoes)
+        mae_modelo = mean_absolute_error(
+            y_validacao, previsoes
+        )
         mae_baseline = mean_absolute_error(
-            y_test, previsoes_baseline
+            y_validacao, previsoes_baseline
         )
 
         resultados.append({
             "fold": fold,
-            "mae_modelo": mae,
-            "mae_baseline": mae_baseline
+            "mae_modelo": mae_modelo,
+            "mae_baseline": mae_baseline,
         })
 
-        print(f"\nFold {fold}")
-        print(f"MAE Random Forest: {mae:.2f}")
-        print(f"MAE Baseline: {mae_baseline:.2f}")
+        print(
+            f"Fold {fold} | "
+            f"Random Forest: {mae_modelo:.2f} | "
+            f"Baseline: {mae_baseline:.2f}"
+        )
 
     resultados_df = pd.DataFrame(resultados)
 
-    print("\nRESULTADO FINAL")
+    print("\n=== RESULTADO DA VALIDACAO TEMPORAL ===")
     print(resultados_df)
 
     print(
-        "\nMAE médio Random Forest:",
-        round(resultados_df["mae_modelo"].mean(), 2)
+        "\nMAE medio Random Forest:",
+        round(resultados_df["mae_modelo"].mean(), 2),
     )
-
     print(
-        "MAE médio Baseline:",
-        round(resultados_df["mae_baseline"].mean(), 2)
+        "MAE medio Baseline:",
+        round(resultados_df["mae_baseline"].mean(), 2),
     )
 
 
 if __name__ == "__main__":
-    print("Iniciando validação temporal...")
     validar_modelo()

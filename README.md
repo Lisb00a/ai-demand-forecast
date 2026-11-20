@@ -1,84 +1,47 @@
-# AI Demand Forecast — Machine Learning Demand Prediction
+## Resultados do Modelo
 
-An end-to-end Machine Learning project for forecasting daily order demand using historical data, calendar features, promotions, and holidays.
+O projeto utiliza dados sintéticos para prever a demanda diária de pedidos, comparando o desempenho de um modelo **Random Forest Regressor** com um modelo de referência (**DummyRegressor**).
 
-Built with **Python, Scikit-learn, Streamlit, FastAPI, and GitHub Actions**, this project demonstrates the development of a predictive model, temporal validation, interactive visualization, REST API integration, and automated testing.
+### Metodologia de Avaliação
 
-> **Disclaimer:** This project uses synthetic data for educational and portfolio purposes. Results do not represent real-world production performance.
+Os dados foram divididos cronologicamente, respeitando a ordem temporal das observações:
 
-## Project Overview
+- **80% dos dados:** treinamento e validação temporal.
+- **20% dos dados:** teste final, reservado para avaliar o desempenho do modelo.
 
-Accurate demand forecasting helps businesses anticipate order volumes, optimize resource allocation, and support operational planning.
+A validação temporal foi realizada utilizando `TimeSeriesSplit`, com três divisões, permitindo avaliar o modelo em diferentes períodos sem utilizar observações futuras no treinamento.
 
-This project explores how supervised Machine Learning can estimate daily orders using historical demand patterns and contextual features.
+Também foram comparadas diferentes profundidades de árvores para identificar a configuração com menor erro médio na validação.
 
-The solution includes:
+### Comparação de Desempenho
 
-- Exploratory data analysis and feature engineering
-- Random Forest regression
-- Baseline comparison using DummyRegressor
-- Chronological train/test split
-- Time-series cross-validation
-- Hyperparameter comparison
-- Residual and bias analysis
-- Interactive Streamlit dashboard
-- FastAPI prediction endpoint
-- Automated tests with pytest
-- Continuous integration with GitHub Actions
+| Métrica | DummyRegressor | Random Forest |
+|---|---:|---:|
+| MAE no teste final | 11,59 | 8,83 |
+| MAE médio na validação temporal | 15,73 | 10,40 |
+| RMSE no teste final | — | 10,79 |
 
-## Tech Stack
+O Random Forest apresentou uma **redução de aproximadamente 23,8% no erro absoluto médio (MAE)** em comparação com o modelo de referência no conjunto de teste.
 
-| Category | Technologies |
-|---|---|
-| Programming | Python |
-| Data Processing | Pandas, NumPy |
-| Machine Learning | Scikit-learn |
-| Visualization | Matplotlib, Plotly |
-| Dashboard | Streamlit |
-| REST API | FastAPI, Uvicorn |
-| Model Serialization | Joblib |
-| Testing | Pytest, HTTPX |
-| CI/CD | GitHub Actions |
-| Version Control | Git, GitHub |
+### Resultados da Validação Temporal
 
-## Dataset
+| Rodada | MAE Random Forest | MAE Baseline |
+|---|---:|---:|
+| 1 | 11,93 | 14,38 |
+| 2 | 9,17 | 15,16 |
+| 3 | 10,11 | 17,65 |
 
-The project uses a synthetic dataset containing daily order information.
+O Random Forest apresentou menor erro em todas as rodadas da validação temporal.
 
-Original data fields include:
+### Comparação de Hiperparâmetros
 
-- `date`: observation date
-- `orders`: daily order volume
-- `promotion`: promotion indicator
-- `holiday`: holiday indicator
-- `revenue_brl`: daily revenue in Brazilian reais
+Foram avaliadas quatro configurações de profundidade máxima:
 
-The dataset contains approximately two years of daily observations, from January 2024 through December 2025.
+| Profundidade máxima | MAE médio |
+|---|---:|
+| 3 | 11,17 |
+| 5 | 10,40 |
+| 8 | 10,79 |
+| 12 | 10,89 |
 
-### Feature Engineering
-
-The model uses nine input features:
-
-| Feature | Description |
-|---|---|
-| `promocao` | Promotion indicator |
-| `feriado` | Holiday indicator |
-| `dia_da_semana` | Day of the week |
-| `mes` | Month |
-| `dia_do_mes` | Day of the month |
-| `fim_de_semana` | Weekend indicator |
-| `pedidos_lag_1` | Orders from the previous day |
-| `pedidos_lag_7` | Orders from seven days earlier |
-| `media_movel_7` | Average orders over the previous seven days |
-
-Historical features are calculated using past observations to avoid directly including the target day's order volume.
-
-The first seven observations are excluded because they lack sufficient historical information.
-
-## Machine Learning Methodology
-
-The workflow follows these steps:
-
-1. Load and preprocess the synthetic dataset.
-2. Generate calendar and historical demand features.
-3. Split
+A configuração
